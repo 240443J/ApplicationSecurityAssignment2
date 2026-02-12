@@ -50,7 +50,7 @@ namespace WebApp_Core_Identity.Services
                 mailMessage.To.Add(toEmail);
                 await smtpClient.SendMailAsync(mailMessage);
 
-                _logger.LogInformation("Email sent successfully with subject: {Subject}", subject);
+                _logger.LogInformation("Email sent successfully.");
             }
             catch (Exception ex)
             {
