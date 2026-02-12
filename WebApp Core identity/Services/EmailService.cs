@@ -50,11 +50,11 @@ namespace WebApp_Core_Identity.Services
                 mailMessage.To.Add(toEmail);
                 await smtpClient.SendMailAsync(mailMessage);
 
-                _logger.LogInformation("Email sent successfully to {Email} with subject: {Subject}", toEmail, subject);
+                _logger.LogInformation("Email sent successfully with subject: {Subject}", subject);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending email to {Email}", toEmail);
+                _logger.LogError(ex, "Error sending email.");
                 throw;
             }
         }
@@ -149,16 +149,16 @@ namespace WebApp_Core_Identity.Services
                 mailMessage.To.Add(toEmail);
 
                 await smtpClient.SendMailAsync(mailMessage);
-                _logger.LogInformation("Password reset email sent successfully to {Email}", toEmail);
+                _logger.LogInformation("Password reset email sent successfully.");
             }
             catch (SmtpException ex)
             {
-                _logger.LogError(ex, "SMTP error sending password reset email to {Email}", toEmail);
+                _logger.LogError(ex, "SMTP error sending password reset email.");
                 throw new InvalidOperationException("Failed to send email. Please check your email settings.", ex);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending password reset email to {Email}", toEmail);
+                _logger.LogError(ex, "Error sending password reset email.");
                 throw;
             }
         }

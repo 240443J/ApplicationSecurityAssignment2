@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Web;
 using WebApp_Core_Identity.Model;
 using WebApp_Core_Identity.Services;
 
@@ -43,9 +44,9 @@ _auditService = auditService;
 
         public async Task<IActionResult> OnGetAsync()
    {
-   _logger.LogInformation("ResetPassword GET - Token: {Token}, Email: {Email}", 
-   string.IsNullOrEmpty(Token) ? "EMPTY" : Token.Substring(0, Math.Min(10, Token.Length)) + "...", 
-      Email);
+   _logger.LogInformation("ResetPassword GET - Token: {TokenPresent}, Email: {EmailPresent}",
+          string.IsNullOrEmpty(Token) ? "EMPTY" : "Present",
+   string.IsNullOrEmpty(Email) ? "EMPTY" : "Present");
 
       if (string.IsNullOrEmpty(Token) || string.IsNullOrEmpty(Email))
             {
@@ -82,9 +83,9 @@ _auditService = auditService;
 
      public async Task<IActionResult> OnPostAsync()
         {
-_logger.LogInformation("ResetPassword POST - Token: {Token}, Email: {Email}", 
-        string.IsNullOrEmpty(Token) ? "EMPTY" : "Present", 
-            string.IsNullOrEmpty(Email) ? "EMPTY" : Email);
+_logger.LogInformation("ResetPassword POST - Token: {TokenPresent}, Email: {EmailPresent}",
+          string.IsNullOrEmpty(Token) ? "EMPTY" : "Present",
+    string.IsNullOrEmpty(Email) ? "EMPTY" : "Present");
 
      // Validate passwords match first
             if (NewPassword != ConfirmPassword)
@@ -108,26 +109,26 @@ _logger.LogInformation("ResetPassword POST - Token: {Token}, Email: {Email}",
 
   if (user == null)
    {
-          _logger.LogWarning("ResetPassword POST - User not found for email: {Email}", Email);
+          _logger.LogWarning("ResetPassword POST - User not found for provided email.");
     ModelState.AddModelError(string.Empty, "Invalid or expired reset token. Please request a new password reset.");
    TokenValid = false;
      return Page();
          }
 
-           // Validate token
-         if (user.PasswordResetToken != Token)
-    {
- _logger.LogWarning("ResetPassword POST - Token mismatch for user: {Email}", Email);
-   ModelState.AddModelError(string.Empty, "Invalid reset token. Please request a new password reset.");
+            // Validate token
+  if (user.PasswordResetToken != Token)
+     {
+        _logger.LogWarning("ResetPassword POST - Token mismatch for user.");
+      ModelState.AddModelError(string.Empty, "Invalid reset token. Please request a new password reset.");
    TokenValid = false;
    return Page();
        }
 
-        // Validate token expiry
-       if (!user.PasswordResetTokenExpiry.HasValue || user.PasswordResetTokenExpiry.Value < DateTime.UtcNow)
-      {
-              _logger.LogWarning("ResetPassword POST - Token expired for user: {Email}", Email);
-        ModelState.AddModelError(string.Empty, "This reset link has expired. Please request a new password reset link.");
+            // Validate token expiry
+   if (!user.PasswordResetTokenExpiry.HasValue || user.PasswordResetTokenExpiry.Value < DateTime.UtcNow)
+  {
+  _logger.LogWarning("ResetPassword POST - Token expired for user.");
+                ModelState.AddModelError(string.Empty, "This reset link has expired. Please request a new password reset link.");
    TokenValid = false;
             return Page();
     }
@@ -138,7 +139,7 @@ _logger.LogInformation("ResetPassword POST - Token: {Token}, Email: {Email}",
 
   if (result.Succeeded)
           {
-      _logger.LogInformation("Password reset successful for {Email}", Email);
+      _logger.LogInformation("Password reset successful for user.");
 
            // FIX: Re-fetch user to avoid OptimisticConcurrencyException
      var updatedUser = await _userManager.FindByEmailAsync(Email);
@@ -171,17 +172,17 @@ _logger.LogInformation("ResetPassword POST - Token: {Token}, Email: {Email}",
            return RedirectToPage("/ResetPasswordConfirmation");
   }
 
-                // Password reset failed - show errors
-    foreach (var error in result.Errors)
-          {
-   _logger.LogWarning("Password reset error for {Email}: {Error}", Email, error.Description);
-     ModelState.AddModelError(string.Empty, error.Description);
+            // Password reset failed - show errors
+            foreach (var error in result.Errors)
+       {
+                _logger.LogWarning("Password reset error: {Error}", HttpUtility.HtmlEncode(error.Description));
+        ModelState.AddModelError(string.Empty, error.Description);
      }
       TokenValid = true; // Keep form visible so user can try again
    }
             catch (Exception ex)
             {
-    _logger.LogError(ex, "Exception during password reset for {Email}", Email);
+    _logger.LogError(ex, "Exception during password reset.");
          ModelState.AddModelError(string.Empty, "An error occurred while resetting your password. Please try again.");
      TokenValid = true;
    }

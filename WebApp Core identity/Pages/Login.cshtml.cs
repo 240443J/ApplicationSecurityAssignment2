@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
-using WebApp_Core_identity.ViewModels;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
 using Newtonsoft.Json;
+using WebApp_Core_identity.ViewModels;
 using WebApp_Core_Identity.Model;
 using WebApp_Core_Identity.Helpers;
 using WebApp_Core_Identity.Services;
@@ -60,7 +61,7 @@ namespace WebApp_Core_identity.Pages
                     {
                         ModelState.AddModelError("", "Invalid email or password");
                         logger.LogWarning("Potential SQL injection attempt in login from IP: {IP}",
-                            HttpContext.Connection.RemoteIpAddress);
+                            HttpUtility.HtmlEncode(HttpContext.Connection.RemoteIpAddress?.ToString()));
 
                         // Log security event
                         await auditService.LogSecurityEventAsync(
@@ -99,8 +100,8 @@ namespace WebApp_Core_identity.Pages
                         {
                             // Don't reveal bot detection, use generic error
                             ModelState.AddModelError("", "Invalid email or password");
-                            logger.LogWarning("reCAPTCHA failed for {Email} from IP: {IP}",
-                                sanitizedEmail, HttpContext.Connection.RemoteIpAddress);
+                            logger.LogWarning("reCAPTCHA failed for login attempt from IP: {IP}",
+                                HttpUtility.HtmlEncode(HttpContext.Connection.RemoteIpAddress?.ToString()));
                             return Page();
                         }
                     }
@@ -118,7 +119,7 @@ namespace WebApp_Core_identity.Pages
                                 // Lockout has expired, reset the lockout
                                 await userManager.SetLockoutEndDateAsync(user, null);
                                 await userManager.ResetAccessFailedCountAsync(user);
-                                logger.LogInformation("Account lockout expired and reset for {Email}", sanitizedEmail);
+                                logger.LogInformation("Account lockout expired and reset for user.");
                             }
                             else
                             {
@@ -126,8 +127,8 @@ namespace WebApp_Core_identity.Pages
                                 var timeRemaining = user.LockoutEnd.Value - DateTimeOffset.UtcNow;
                                 var minutesRemaining = (int)Math.Ceiling(timeRemaining.TotalMinutes);
 
-                                logger.LogWarning("Account locked out for {Email} from IP: {IP}",
-                                    sanitizedEmail, HttpContext.Connection.RemoteIpAddress);
+                                logger.LogWarning("Account locked out. Login attempt from IP: {IP}",
+                                    HttpUtility.HtmlEncode(HttpContext.Connection.RemoteIpAddress?.ToString()));
                                 ModelState.AddModelError("", $"Account is locked. Please try again in {minutesRemaining} minute(s).");
 
                                 // Log failed login
@@ -186,7 +187,7 @@ namespace WebApp_Core_identity.Pages
 
                         await _emailService.SendEmailAsync(sanitizedEmail, subject, body);
 
-                        logger.LogInformation("2FA OTP sent to {Email}", sanitizedEmail);
+                        logger.LogInformation("2FA OTP sent to user for login verification.");
 
                         // Sign out from Identity (we'll sign in properly after OTP verification)
                         await signInManager.SignOutAsync();
@@ -202,8 +203,8 @@ namespace WebApp_Core_identity.Pages
                             : TimeSpan.FromMinutes(3);
                         var minutesRemaining = (int)Math.Ceiling(timeRemaining.TotalMinutes);
 
-                        logger.LogWarning("Account locked out for {Email} from IP: {IP}",
-                            sanitizedEmail, HttpContext.Connection.RemoteIpAddress);
+                        logger.LogWarning("Account locked out after failed attempts from IP: {IP}",
+                            HttpUtility.HtmlEncode(HttpContext.Connection.RemoteIpAddress?.ToString()));
                         ModelState.AddModelError("", $"Account is locked due to too many failed attempts. Please try again in {minutesRemaining} minute(s).");
 
                         // Log failed login
@@ -220,8 +221,8 @@ namespace WebApp_Core_identity.Pages
                     }
                     else
                     {
-                        logger.LogWarning("Failed login attempt for {Email} from IP: {IP}",
-                            sanitizedEmail, HttpContext.Connection.RemoteIpAddress);
+                        logger.LogWarning("Failed login attempt from IP: {IP}",
+                            HttpUtility.HtmlEncode(HttpContext.Connection.RemoteIpAddress?.ToString()));
                         ModelState.AddModelError("", "Invalid email or password");
 
                         // Log failed login
@@ -236,8 +237,8 @@ namespace WebApp_Core_identity.Pages
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Login error for {Email} from IP: {IP}",
-                        LModel.Email, HttpContext.Connection.RemoteIpAddress);
+                    logger.LogError(ex, "Login error from IP: {IP}",
+                        HttpUtility.HtmlEncode(HttpContext.Connection.RemoteIpAddress?.ToString()));
                     ModelState.AddModelError("", "An error occurred during login. Please try again.");
                 }
             }

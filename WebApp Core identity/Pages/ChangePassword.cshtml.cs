@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Web;
 using WebApp_Core_identity.ViewModels;
 using WebApp_Core_Identity.Model;
 using WebApp_Core_Identity.Services;
@@ -85,8 +86,8 @@ if (user == null)
     if (!canChange)
     {
         ModelState.AddModelError(string.Empty, errorMessage!);
-  _logger.LogWarning("User {Email} attempted to change password before minimum age. Time remaining: {TimeRemaining}", 
-   user.Email, timeRemaining);
+     _logger.LogWarning("User attempted to change password before minimum age. Time remaining: {TimeRemaining}",
+            timeRemaining);
         return Page();
     }
 
@@ -139,7 +140,7 @@ ModelState.AddModelError(string.Empty, error.Description);
         HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown", 
         HttpContext.Request.Headers["User-Agent"].ToString());
 
-    _logger.LogInformation("User {Email} changed password successfully", user.Email);
+    _logger.LogInformation("User changed password successfully.");
 
     // 7. Refresh Sign-in (Crucial: Do not call UpdateAsync manually after this!)
     await _signInManager.RefreshSignInAsync(user);

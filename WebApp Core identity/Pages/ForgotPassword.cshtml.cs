@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Cryptography;
+using System.Web;
+using Newtonsoft.Json;
 using WebApp_Core_Identity.Model;
 using WebApp_Core_Identity.Services;
 using WebApp_Core_Identity.Helpers;
-using System.Security.Cryptography;
-using Newtonsoft.Json;
 
 namespace WebApp_Core_identity.Pages
 {
@@ -62,24 +63,21 @@ namespace WebApp_Core_identity.Pages
                     {
                         // Bot detected - reject request
                         ModelState.AddModelError("", "Request failed. Please try again.");
-                        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-                        var score = captchaResult?.score?.ToString() ?? "unknown";
-                        _logger.LogWarning($"reCAPTCHA failed for password reset attempt from IP: {ipAddress}, Score: {score}");
+                        _logger.LogWarning("reCAPTCHA failed for password reset attempt from IP: {IP}",
+         HttpUtility.HtmlEncode(HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown"));
 
                         // Log security event
                         await _auditService.LogSecurityEventAsync(
                             "Anonymous",
                             "Bot Password Reset Attempt",
-                            $"reCAPTCHA score: {score}",
-                            ipAddress,
+                            $"reCAPTCHA verification failed",
+                            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
                             HttpContext.Request.Headers["User-Agent"].ToString());
 
                         return Page();
                     }
 
-                    var passIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-                    var passScore = captchaResult?.score?.ToString() ?? "unknown";
-                    _logger.LogInformation($"reCAPTCHA passed for password reset from IP: {passIpAddress}, Score: {passScore}");
+                    _logger.LogInformation("reCAPTCHA passed for password reset request.");
                 }
 
                 // Validate email format
@@ -121,7 +119,7 @@ namespace WebApp_Core_identity.Pages
                         HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
                         HttpContext.Request.Headers["User-Agent"].ToString());
 
-                    _logger.LogInformation("Password reset requested for {Email}", sanitizedEmail);
+                    _logger.LogInformation("Password reset requested for a user account.");
                 }
                 else
                 {
@@ -129,18 +127,18 @@ namespace WebApp_Core_identity.Pages
                     await _auditService.LogSecurityEventAsync(
                         "Unknown",
                         "PasswordResetAttempt",
-                        $"Password reset attempted for non-existent email: {sanitizedEmail}",
+                        "Password reset attempted for non-existent email",
                         HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
                         HttpContext.Request.Headers["User-Agent"].ToString());
 
-                    _logger.LogWarning("Password reset attempted for non-existent email: {Email}", sanitizedEmail);
+                    _logger.LogWarning("Password reset attempted for non-existent email.");
                 }
 
                 return RedirectToPage("/ForgotPasswordConfirmation");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing password reset for {Email}", Email);
+                _logger.LogError(ex, "Error processing password reset request.");
                 ModelState.AddModelError(string.Empty, "An error occurred while processing your request. Please try again.");
                 return Page();
             }

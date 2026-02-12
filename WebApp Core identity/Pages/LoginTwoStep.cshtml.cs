@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
+using System.Web;
 using WebApp_Core_Identity.Model;
 using WebApp_Core_Identity.Services;
 
@@ -59,46 +60,46 @@ namespace WebApp_Core_identity.Pages
 
         public async Task<IActionResult> OnPostAsync()
         {
-            var sessionOTP = HttpContext.Session.GetString("OTP");
+   var sessionOTP = HttpContext.Session.GetString("OTP");
             var email = HttpContext.Session.GetString("AuthUserEmail");
-            var otpTimestamp = HttpContext.Session.GetString("OTPTimestamp");
+     var otpTimestamp = HttpContext.Session.GetString("OTPTimestamp");
 
             // Check if session data exists
             if (string.IsNullOrEmpty(sessionOTP) || string.IsNullOrEmpty(email))
-            {
-                ModelState.AddModelError("", "Session expired. Please login again.");
-                return RedirectToPage("/Login");
+     {
+  ModelState.AddModelError("", "Session expired. Please login again.");
+      return RedirectToPage("/Login");
             }
 
             // Check if OTP has expired (5 minutes)
-            if (!string.IsNullOrEmpty(otpTimestamp))
-            {
-                if (DateTime.TryParse(otpTimestamp, out var timestamp))
-                {
-                    if (DateTime.UtcNow - timestamp > TimeSpan.FromMinutes(5))
-                    {
-                        HttpContext.Session.Remove("OTP");
-                        HttpContext.Session.Remove("AuthUserEmail");
-                        HttpContext.Session.Remove("OTPTimestamp");
-                        ModelState.AddModelError("", "OTP has expired. Please login again to receive a new code.");
-                        _logger.LogWarning("Expired OTP attempt for {Email}", email);
-                        return Page();
-                    }
+          if (!string.IsNullOrEmpty(otpTimestamp))
+   {
+       if (DateTime.TryParse(otpTimestamp, out var timestamp))
+    {
+            if (DateTime.UtcNow - timestamp > TimeSpan.FromMinutes(5))
+     {
+      HttpContext.Session.Remove("OTP");
+     HttpContext.Session.Remove("AuthUserEmail");
+              HttpContext.Session.Remove("OTPTimestamp");
+         ModelState.AddModelError("", "OTP has expired. Please login again to receive a new code.");
+                 _logger.LogWarning("Expired OTP attempt for user");
+     return Page();
                 }
+          }
+ }
+
+  // Validate OTP
+      if (OTPInput != sessionOTP)
+ {
+           ModelState.AddModelError("", "Invalid OTP. Please try again.");
+ _logger.LogWarning("Invalid OTP attempt for user");
+       return Page();
             }
 
-            // Validate OTP
-            if (OTPInput != sessionOTP)
-            {
-                ModelState.AddModelError("", "Invalid OTP. Please try again.");
-                _logger.LogWarning("Invalid OTP attempt for {Email}", email);
-                return Page();
-            }
-
-            // OTP is valid - complete login
+  // OTP is valid - complete login
             var user = await userManager.FindByEmailAsync(email);
             if (user != null)
-            {
+  {
                 // Clear OTP from session
                 HttpContext.Session.Remove("OTP");
                 HttpContext.Session.Remove("OTPTimestamp");
@@ -134,12 +135,12 @@ namespace WebApp_Core_identity.Pages
 
                 await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, authProperties);
 
-                // Audit log - successful 2FA login
-                await auditService.LogLoginAsync(user.Id, user.Email!,
-                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
-                    HttpContext.Request.Headers["User-Agent"].ToString(), true);
+         // Audit log - successful 2FA login
+           await auditService.LogLoginAsync(user.Id, user.Email!,
+         HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+    HttpContext.Request.Headers["User-Agent"].ToString(), true);
 
-                _logger.LogInformation("User {Email} completed 2FA login successfully", email);
+    _logger.LogInformation("User completed 2FA login successfully.");
 
                 // Clear remaining session data
                 HttpContext.Session.Remove("AuthUserEmail");
@@ -148,8 +149,8 @@ namespace WebApp_Core_identity.Pages
                 return RedirectToPage("Index");
             }
 
-            _logger.LogWarning("User not found after valid OTP for email: {Email}", email);
+    _logger.LogWarning("User not found after valid OTP.");
             return RedirectToPage("/Login");
         }
-    }
+  }
 }

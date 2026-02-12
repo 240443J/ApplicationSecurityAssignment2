@@ -77,7 +77,7 @@ namespace WebApp_Core_identity.Pages
                     HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
                     HttpContext.Request.Headers["User-Agent"].ToString());
 
-                _logger.LogInformation("User {Email} viewed their profile at {Time}", user.Email, DateTime.UtcNow);
+                _logger.LogInformation("User viewed their profile at {Time}", DateTime.UtcNow);
             }
         }
     }
