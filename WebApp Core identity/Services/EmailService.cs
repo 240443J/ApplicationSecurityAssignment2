@@ -119,11 +119,11 @@ namespace WebApp_Core_Identity.Services
             <p style='text-align: center;'>
   <a href='{encodedResetLinkForAttribute}' class='button'>Reset Password</a>
             </p>
-    <p>Or copy and paste this link into your browser:</p>
-  <p style='word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 3px;'>
-     {encodedResetLink}
-          </p>
-      <div class='warning'>
+    <p>If you did not request a password reset, you can safely ignore this email.</p>
+
+
+          <div class='warning'>
+    <strong>?? Important:</strong>
     <strong>?? Important:</strong>
        <ul>
              <li>This link will expire in <strong>30 minutes</strong></li>
