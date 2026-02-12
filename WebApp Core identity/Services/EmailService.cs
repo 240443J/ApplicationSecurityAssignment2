@@ -84,6 +84,10 @@ namespace WebApp_Core_Identity.Services
                     Credentials = new NetworkCredential(fromEmail, appPassword)
                 };
 
+                // HTML-encode the reset link before inserting it into the email body
+                var encodedResetLink = WebUtility.HtmlEncode(resetLink);
+                var encodedResetLinkForAttribute = encodedResetLink;
+
                 var mailMessage = new MailMessage
                 {
                     From = new MailAddress(fromEmail, fromName),
@@ -113,11 +117,11 @@ namespace WebApp_Core_Identity.Services
        <p>We received a request to reset your password for your Fresh Farm Market account.</p>
  <p>Click the button below to reset your password:</p>
             <p style='text-align: center;'>
-  <a href='{resetLink}' class='button'>Reset Password</a>
+  <a href='{encodedResetLinkForAttribute}' class='button'>Reset Password</a>
             </p>
     <p>Or copy and paste this link into your browser:</p>
   <p style='word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 3px;'>
-     {resetLink}
+     {encodedResetLink}
           </p>
       <div class='warning'>
     <strong>?? Important:</strong>
